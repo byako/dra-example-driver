@@ -1,0 +1,45 @@
+apiVersion: dra.example.com/v1alpha
+kind: MydeviceClaimParameters
+metadata:
+  name: inline-claim-parameters
+  namespace: default
+spec:
+  count: 1
+  type: type0
+---
+apiVersion: resource.k8s.io/v1alpha1
+kind: ResourceClaimTemplate
+metadata:
+  name: test-inline-claim-template
+  namespace: default
+spec:
+  metadata:
+    labels:
+      app: inline-resource
+  spec:
+    resourceClassName: mydevice
+    parametersRef:
+      apiGroup: dra.example.com/v1alpha
+      kind: MydeviceClaimParameters
+      name: inline-claim-parameters
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-inline-claim
+spec:
+  restartPolicy: Never
+  containers:
+  - name: with-resource
+    image: registry.k8s.io/e2e-test-images/busybox:1.29-2
+    command: ["sh", "-c", "ls -la /dev/dri/ && sleep 30"]
+    resources:
+      claims:
+      - name: resource
+  - name: without-resource
+    image: registry.k8s.io/e2e-test-images/busybox:1.29-2
+    command: ["sh", "-c", "ls -la /dev/ && sleep 30"]
+  resourceClaims:
+  - name: resource
+    source:
+      resourceClaimTemplateName: test-inline-claim-template
